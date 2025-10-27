@@ -1,0 +1,61 @@
+# -------------------
+# Python Bytecode
+# -------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# -------------------
+# Virtual Environments
+# -------------------
+venv/
+env/
+.venv/
+Lib/
+Scripts/
+pyvenv.cfg
+
+# -------------------
+# Data and Results
+# -------------------
+
+data/interim/
+results/
+*.zip
+*.tar
+*.tar.gz
+
+# -------------------
+# DVC
+# -------------------
+# Allow DVC folder and ignore large tracked files
+# DVC
+.dvc/          # track the DVC folder itself
+!.dvcignore    # track the ignore rules file
+*.dvc          # ignore DVC-tracked data files
+.cache/        # ignore DVC cache
+
+
+# -------------------
+# IDE / OS
+# -------------------
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# -------------------
+# Logs / Temp Files
+# -------------------
+*.log
+*.tmp
+
+# -------------------
+# AWS / Secrets
+# -------------------
+*.pem
+*.key
+.env
+credentials.json
