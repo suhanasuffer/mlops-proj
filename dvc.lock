@@ -1,0 +1,80 @@
+schema: '2.0'
+stages:
+  analyze_damage:
+    cmd: python script/analyze_damage.py
+    deps:
+    - path: data/raw/Faulty_solar_panel/Physical-Damage
+      hash: md5
+      md5: d4a45829b225b19084b9572d1869d1a4.dir
+      size: 43211537
+      nfiles: 138
+    - path: models/autoencoder_model.h5
+      hash: md5
+      md5: 9fb005ffa1b9b112f43e7c542e55c586
+      size: 25871736
+      isexec: true
+    - path: script/analyze_damage.py
+      hash: md5
+      md5: b73cc807cbfb24e2596cc21a1057a6c0
+      size: 2457
+      isexec: true
+    params:
+      params.yaml:
+        data:
+          raw: data/raw/Faulty_solar_panel
+          input_folder: data/raw/Faulty_solar_panel/Physical-Damage
+          output_folder: results/metrics/squiggliness_output
+          raw_dir: data/raw/Faulty_solar_panel
+          processed_dir: data/processed
+          train_split: 0.8
+          val_split: 0.2
+        squiggliness:
+          threshold: 1.5
+          area_min: 100
+          threshold_major: 0.65
+          threshold_minor: 0.45
+        training:
+          batch_size: 32
+          epochs: 10
+          img_height: 224
+          img_width: 224
+          learning_rate: 0.0005
+          model_output: models/solar_model.h5
+    outs:
+    - path: results/metrics/squiggliness_output/major_minor_scores.json
+      hash: md5
+      md5: 4798d871aeadf046a5c73ea0577d0497
+      size: 1928
+      isexec: true
+  evaluate_threshold:
+    cmd: python script/evaluate_threshold.py
+    deps:
+    - path: results/metrics/squiggliness_output/major_minor_scores.json
+      hash: md5
+      md5: 4798d871aeadf046a5c73ea0577d0497
+      size: 1928
+      isexec: true
+    - path: script/evaluate_threshold.py
+      hash: md5
+      md5: 166a92172aa1461995cbe57469b721e8
+      size: 1936
+      isexec: true
+    outs:
+    - path: results/figures
+      hash: md5
+      md5: 1cde294571ae5133a79c5e4b2fc11443.dir
+      size: 39238
+      nfiles: 2
+    - path: results/metrics/threshold_eval.json
+      hash: md5
+      md5: ed6c20ff07f76034fcadf0ba3680b3aa
+      size: 87
+      isexec: true
+  download_data:
+    cmd: python script/download_data.py
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 6e14ba9c032251dfac0d7a917d64f8d3.dir
+      size: 1298860746
+      nfiles: 1106
