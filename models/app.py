@@ -10,6 +10,7 @@ from PIL import Image
 # -------------------------------
 autoencoder = load_model("models/autoencoder_model.h5", compile=False)
 
+
 adaptive_threshold = 0.085  # your chosen threshold
 
 # -------------------------------
@@ -66,6 +67,7 @@ if uploaded_file is not None:
 
     # Run autoencoder classification
     original, reconstructed, classification, error = classify_image(image_np)
+    st.write("Model input shape:", autoencoder.input_shape)
 
     st.write(f"### **Prediction:** {classification}")
     st.write(f"Reconstruction Error: `{error:.4f}`")
