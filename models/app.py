@@ -16,8 +16,16 @@ adaptive_threshold = 0.085  # your chosen threshold
 # Preprocessing for Autoencoder
 # -------------------------------
 def preprocess_for_autoencoder(image):
-    img = cv2.resize(np.array(image), (128, 128)).astype('float32') / 255.0
-    return np.expand_dims(img, axis=0)
+    # Ensure RGB (3 channels)
+    if len(image.shape) == 2:  # grayscale
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    elif image.shape[2] == 4:  # RGBA (has alpha)
+        image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+    
+    img = cv2.resize(image, (128, 128)).astype('float32') / 255.0
+    img = np.expand_dims(img, axis=0)
+    return img
+
 
 # -------------------------------
 # Autoencoder Classification
