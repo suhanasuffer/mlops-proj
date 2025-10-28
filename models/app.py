@@ -45,7 +45,7 @@ def display_image_with_contours(image):
 # -------------------------------
 # Streamlit UI
 # -------------------------------
-st.title("Solar Panel Cleanliness Classifier (Autoencoder Only)")
+st.title("Solar Panel Cleanliness Classifier")
 st.write("Upload an image to determine whether the solar panel is **Clean** or **Dusty**.")
 
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
