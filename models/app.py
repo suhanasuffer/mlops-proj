@@ -8,7 +8,7 @@ from PIL import Image
 # -------------------------------
 # Load Autoencoder Model
 # -------------------------------
-autoencoder = load_model("models/autoencoder_model.h5")  # <<-- MAKE SURE FILE NAME MATCHES
+autoencoder = load_model("models/autoencoder_model.h5", compile=False)
 
 adaptive_threshold = 0.085  # your chosen threshold
 
