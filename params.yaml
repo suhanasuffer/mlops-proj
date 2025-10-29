@@ -1,11 +1,14 @@
 data:
   raw: data/raw/Faulty_solar_panel
-  input_folder: "data/raw/Faulty_solar_panel/Physical-Damage"     # or your input test images folder
-  output_folder: "results/metrics/squiggliness_output"  # where processed images will be saved
+  input_folder: "data/raw/Faulty_solar_panel/Physical-Damage"     
+  output_folder: "results/metrics/squiggliness_output"  
   raw_dir: data/raw/Faulty_solar_panel
   processed_dir: data/processed
   train_split: 0.8
   val_split: 0.2
+  shuffle_data: true
+  data_augmentation: true
+  augmentation_strength: 0.5
 
 training:
   batch_size: 32
@@ -14,9 +17,13 @@ training:
   img_width: 224
   learning_rate: 0.0005
   model_output: models/solar_model.h5
+  optimizer: "adam"
+  dropout_rate: 0.3
+  early_stopping_patience: 5
+  random_seed: 42
 
 squiggliness:
-  threshold: 1.5      # tweak this depending on how strict you want it
+  threshold: 1.5      
   area_min: 100
   threshold_major: 0.65
   threshold_minor: 0.45
