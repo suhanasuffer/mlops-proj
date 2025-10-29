@@ -3,18 +3,43 @@ stages:
     cmd: python script/download_data.py
     outs:
       - data/raw
+
+  preprocess_data:
+    cmd: python script/preprocess_data.py
+    deps:
+      - script/preprocess_data.py
+      - data/raw
+    params:
+      - data.raw_dir
+      - data.processed_dir
+      - data.train_split
+      - data.val_split
+      - data.shuffle_data
+    outs:
+      - data/processed
+
   analyze_damage:
     cmd: python script/analyze_damage.py
     deps:
       - script/analyze_damage.py
       - models/autoencoder_model.h5
-      - data/raw/Faulty_solar_panel/Physical-Damage
+      - data/processed
     params:
       - data
       - training
       - squiggliness
     outs:
       - results/metrics/squiggliness_output/major_minor_scores.json
+
+  train_model:
+    cmd: python script/train_model.py
+    deps:
+      - script/train_model.py
+      - data/processed
+    params:
+      - training
+    outs:
+      - models/solar_model.h5
 
   evaluate_threshold:
     cmd: python script/evaluate_threshold.py
@@ -24,3 +49,10 @@ stages:
     outs:
       - results/metrics/threshold_eval.json
       - results/figures
+
+  package_model:
+    cmd: python script/package_model.py
+    deps:
+      - models/solar_model.h5
+    outs:
+      - deploy/model_package.tar.gz
