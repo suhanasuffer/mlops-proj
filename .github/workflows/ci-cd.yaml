@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,4 +30,27 @@ jobs:
         run: pytest
 
       - name: Build Docker image
-        run: docker build -t mlops-solar-panel .
+        run: docker build -t mlops-proj .
+
+      # --- Deployment to EC2 ---
+      - name: Deploy to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "."
+          target: "~/mlops-proj"
+
+      - name: SSH into EC2 and run container
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/mlops-proj
+            docker stop mlops-proj || true
+            docker rm mlops-proj || true
+            docker build -t mlops-proj .
+            docker run -d -p 8501:8501 --name mlops-proj mlops-proj
