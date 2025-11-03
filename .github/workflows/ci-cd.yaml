@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install dvc[s3]
+          pip install dvc[s3] pytest
 
       - name: Run DVC pipeline
         run: dvc repro
