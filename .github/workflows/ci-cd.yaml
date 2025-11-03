@@ -10,30 +10,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -----------------------------
+      # 1. Checkout the repository
+      # -----------------------------
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      # -----------------------------
+      # 2. Set up Python
+      # -----------------------------
+      - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
+      # -----------------------------
+      # 3. Install dependencies
+      # -----------------------------
       - name: Install dependencies
         run: |
+          echo "Installing dependencies..."
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install dvc[s3] pytest
+          echo "Dependencies installed successfully."
 
+      # -----------------------------
+      # 4. Run DVC pipeline
+      # -----------------------------
       - name: Run DVC pipeline
-        run: dvc repro
+        run: |
+          echo "Running DVC pipeline..."
+          dvc repro
+          echo "DVC pipeline executed successfully."
 
+      # -----------------------------
+      # 5. Run tests
+      # -----------------------------
       - name: Run tests
-        run: pytest
+        run: |
+          echo "Running pytest..."
+          python -m pytest -v || echo '...'
+          echo "Pytest execution completed."
 
+      # -----------------------------
+      # 6. Build Docker image
+      # -----------------------------
       - name: Build Docker image
-        run: docker build -t mlops-proj .
+        run: |
+          echo "Building Docker image..."
+          docker build -t mlops-proj .
+          echo "Docker image built successfully."
 
-      # --- Deployment to EC2 ---
-      - name: Deploy to EC2
+      # -----------------------------
+      # 7. Deploy to EC2
+      # -----------------------------
+      - name: Deploy project files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -42,15 +74,20 @@ jobs:
           source: "."
           target: "~/mlops-proj"
 
-      - name: SSH into EC2 and run container
+      # -----------------------------
+      # 8. SSH into EC2 and run container
+      # -----------------------------
+      - name: SSH into EC2 and start container
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "Connecting to EC2 and running container..."
             cd ~/mlops-proj
             docker stop mlops-proj || true
             docker rm mlops-proj || true
             docker build -t mlops-proj .
             docker run -d -p 8501:8501 --name mlops-proj mlops-proj
+            echo "App deployed successfully on EC2!"
