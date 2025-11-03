@@ -44,7 +44,7 @@ def classify_image(image):
     reconstructed_image = autoencoder.predict(processed_image)
 
     error = np.mean(np.abs(processed_image - reconstructed_image))
-    classification = "Dusty" if error > adaptive_threshold else "Clean"
+    classification = "Dirty" if error > adaptive_threshold else "Clean"
 
     return processed_image[0], reconstructed_image[0], classification, error
 
@@ -63,7 +63,7 @@ def display_image_with_contours(image):
 # Streamlit UI
 # -------------------------------
 st.title("Solar Panel Cleanliness Classifier")
-st.write("Upload an image to determine whether the solar panel is **Clean** or **Dusty**.")
+st.write("Upload an image to determine whether the solar panel is **Clean** or **Dirty**.")
 
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
