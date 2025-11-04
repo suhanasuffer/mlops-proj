@@ -63,3 +63,4 @@ credentials.json
 
 models.solar_panel_cnn.h5
 reports/autoencoder_evaluation.json
+reports/reconstruction_errors.json
