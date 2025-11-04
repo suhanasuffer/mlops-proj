@@ -78,3 +78,62 @@ stages:
       md5: 6e14ba9c032251dfac0d7a917d64f8d3.dir
       size: 1298860746
       nfiles: 1106
+  preprocess_data:
+    cmd: python script/preprocess_data.py
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 6e14ba9c032251dfac0d7a917d64f8d3.dir
+      size: 1298860746
+      nfiles: 1106
+    - path: script/preprocess_data.py
+      hash: md5
+      md5: ae81e8dd29a04ac49d5c595615fff856
+      size: 1624
+    params:
+      params.yaml:
+        data.processed_dir: data/processed
+        data.raw_dir: data/raw/Faulty_solar_panel
+        data.shuffle_data: true
+        data.train_split: 0.8
+        data.val_split: 0.2
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: c65929bd7ce31b42ff363329c3c92a6e.dir
+      size: 18350312
+      nfiles: 553
+  train_model:
+    cmd: python script/train_model.py
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: c65929bd7ce31b42ff363329c3c92a6e.dir
+      size: 18350312
+      nfiles: 553
+    - path: params.yaml
+      hash: md5
+      md5: 5e1480cfb6ee34ae69f18363686857c3
+      size: 769
+    - path: script/train_model.py
+      hash: md5
+      md5: 2161773a9d86be0b0583edb85ef50e50
+      size: 3186
+    params:
+      params.yaml:
+        training:
+          batch_size: 16
+          epochs: 20
+          img_height: 224
+          img_width: 224
+          learning_rate: 0.0005
+          model_output: models/autoencoder_model.h5
+          optimizer: adam
+          dropout_rate: 0.3
+          early_stopping_patience: 5
+          random_seed: 42
+    outs:
+    - path: models/autoencoder_model.h5
+      hash: md5
+      md5: 65b0996bd5c0c7b1c89b645512c5b910
+      size: 4075240

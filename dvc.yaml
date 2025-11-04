@@ -36,10 +36,11 @@ stages:
     deps:
       - script/train_model.py
       - data/processed
+      - params.yaml
     params:
       - training
     outs:
-      - models/solar_model.h5
+      - models/autoencoder_model.h5
 
   evaluate_threshold:
     cmd: python script/evaluate_threshold.py
@@ -53,6 +54,7 @@ stages:
   package_model:
     cmd: python script/package_model.py
     deps:
-      - models/solar_model.h5
+      - script/package_model.py
+      - models/autoencoder_model.h5
     outs:
       - deploy/model_package.tar.gz

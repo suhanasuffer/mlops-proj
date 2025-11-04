@@ -5,11 +5,15 @@ import glob
 from scipy import stats
 import os
 import json
+import yaml
 
+with open ("params.yaml") as f:
+	params = yaml.safe_load(f)
+model_path = params["training"]["model_output"]
 
 # Load trained model
 autoencoder = tf.keras.models.load_model(
-    "models/autoencoder_model.h5",
+    model_path,
     custom_objects={"mse": tf.keras.losses.MeanSquaredError()}
 )
 
