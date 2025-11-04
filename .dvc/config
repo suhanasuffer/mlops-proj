@@ -1,0 +1,5 @@
+[core]
+    remote = mlops-solar-panel-data
+    autostage = true
+['remote "mlops-solar-panel-data"']
+    url = s3://mlops-solar-panel-data/files/

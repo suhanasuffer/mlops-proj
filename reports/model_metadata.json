@@ -1,0 +1,5 @@
+{
+  "model_source": "models/autoencoder_model.h5",
+  "packaged_path": "models/packaged_model.h5",
+  "status": "success"
+}

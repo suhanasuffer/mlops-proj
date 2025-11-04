@@ -27,3 +27,7 @@ squiggliness:
   area_min: 100
   threshold_major: 0.65
   threshold_minor: 0.45
+
+evaluate:
+  model_path: "models/solar_panel_cnn.h5"
+  test_data_dir: data/processed/

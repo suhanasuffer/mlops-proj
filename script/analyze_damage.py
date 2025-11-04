@@ -1,85 +1,111 @@
-import tensorflow as tf
-import cv2
-import numpy as np
-import glob
-from scipy import stats
+# script/analyze_damage.py
 import os
-import json
 import yaml
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import load_model
+from tensorflow.keras.losses import MeanSquaredError
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 
-with open ("params.yaml") as f:
-	params = yaml.safe_load(f)
-model_path = params["training"]["model_output"]
+def load_params():
+    with open("params.yaml") as f:
+        return yaml.safe_load(f)
 
-# Load trained model
-autoencoder = tf.keras.models.load_model(
-    model_path,
-    custom_objects={"mse": tf.keras.losses.MeanSquaredError()}
-)
+def reconstruction_error(original, reconstructed):
+    """Compute per-image mean squared reconstruction error."""
+    return np.mean(np.square(original - reconstructed), axis=(1, 2, 3))
 
-# Path to damaged images
-damaged_folder = "data/raw/Faulty_solar_panel/Physical-Damage"
+if __name__ == "__main__":
+    params = load_params()
+    img_height = params["training"]["img_height"]
+    img_width = params["training"]["img_width"]
+    batch_size = params["training"]["batch_size"]
+    model_path = params["training"]["model_output"]
 
-def calculate_damage_score(contours):
-    if not contours:
-        return 0
-    squiggliness_score = 0
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        perimeter = cv2.arcLength(contour, True)
-        if area > 10:
-            squiggliness_score += perimeter / area
-    return squiggliness_score
+    print("📂 Loading processed validation images...")
+    processed_dir = "data/processed"
 
-def process_image_with_autoencoder(img_path):
-    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        return None
+    datagen = ImageDataGenerator(rescale=1.0 / 255.0, validation_split=0.2)
+    test_gen = datagen.flow_from_directory(
+        processed_dir,
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode='categorical',
+        subset='validation',
+        shuffle=False
+    )
 
-    img_resized = cv2.resize(img, (128, 128)) / 255.0
-    img_input = np.expand_dims(img_resized, axis=(0, -1))
-    reconstructed = autoencoder.predict(img_input, verbose=0)[0].squeeze()
+    print("🧠 Loading trained autoencoder model safely...")
+    # explicitly define the mse function for deserialization
+    autoencoder = load_model(model_path, custom_objects={'mse': MeanSquaredError()})
 
-    # Compute reconstruction difference (this highlights damage)
-    diff = np.abs(img_resized - reconstructed)
+    print("🔍 Computing reconstruction errors...")
+    all_errors = []
+    y_true = test_gen.classes
 
-    # Scale back to 0–255
-    diff_uint8 = (diff * 255).astype(np.uint8)
+    test_gen.reset()
+    for i in tqdm(range(len(test_gen))):
+        batch = test_gen[i][0]
+        reconstructed = autoencoder.predict(batch)
+        errors = reconstruction_error(batch, reconstructed)
+        all_errors.extend(errors)
 
-    # Use adaptive or Otsu thresholding for more sensitivity
-    _, thresh = cv2.threshold(diff_uint8, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    all_errors = np.array(all_errors)
+    mean_error = np.mean(all_errors)
+    std_error = np.std(all_errors)
+    threshold = mean_error + 2 * std_error
 
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    return calculate_damage_score(contours)
+    print(f"📏 Damage threshold (mean + 2*std): {threshold:.4f}")
 
-# Analyze damaged images
-scores = []
-for img_path in glob.glob(os.path.join(damaged_folder, "*.jpg")):
-    score = process_image_with_autoencoder(img_path)
-    if score is not None:
-        scores.append(score)
+    y_pred = (all_errors > threshold).astype(int)
+    damage_labels = np.array(['Healthy' if e <= threshold else 'Damaged' for e in all_errors])
 
-print(f"✅ Processed {len(scores)} images.")
-print("Average squiggliness score:", np.mean(scores))
+    os.makedirs("reports", exist_ok=True)
 
-# Separate scores into major/minor damage (using dynamic threshold)
-threshold = np.mean(scores) if len(scores) > 0 else 0
-major_scores = [s for s in scores if s > threshold]
-minor_scores = [s for s in scores if s <= threshold]
+    # Histogram of reconstruction errors
+    plt.figure(figsize=(8, 5))
+    plt.hist(all_errors, bins=30, color='skyblue', edgecolor='black')
+    plt.axvline(threshold, color='red', linestyle='--', label='Threshold')
+    plt.title('Distribution of Reconstruction Errors')
+    plt.xlabel('Reconstruction Error')
+    plt.ylabel('Frequency')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("reports/reconstruction_error_hist.png")
 
+    # Confusion matrix (optional visualization)
+    cm = confusion_matrix(y_true, y_pred > 0)
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title("Confusion Matrix (Autoencoder Threshold)")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.tight_layout()
+    plt.savefig("reports/confusion_matrix_autoencoder.png")
 
-output_dir = "results/metrics/squiggliness_output"
-os.makedirs(output_dir, exist_ok=True)
+    # Save aggregate results
+    results = {
+        "mean_error": float(mean_error),
+        "std_error": float(std_error),
+        "threshold": float(threshold)
+    }
+    with open("reports/autoencoder_evaluation.json", "w") as f:
+        json.dump(results, f, indent=2)
 
-output_path = os.path.join(output_dir, "major_minor_scores.json")
-output_data = {
-    "average_squiggliness": np.mean(scores),
-    "num_images": len(scores),
-    "major": major_scores,
-    "minor": minor_scores
-}
+    # ✅ Save individual reconstruction errors and labels
+    errors_file = "reports/reconstruction_errors.json"
+    class_indices = {v: k for k, v in test_gen.class_indices.items()}
+    label_names = [class_indices[c] for c in y_true]
 
-with open(output_path, "w") as f:
-    json.dump(output_data, f, indent=4)
+    with open(errors_file, "w") as f:
+        json.dump({
+            "errors": all_errors.tolist(),
+            "labels": label_names
+        }, f, indent=2)
 
-print(f"✅ Results saved to {output_path}")
+    print(f" Saved individual reconstruction errors to {errors_file}")
+    print(" Analysis complete. Results saved in 'reports/' folder.")

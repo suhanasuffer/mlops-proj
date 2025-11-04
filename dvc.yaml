@@ -29,7 +29,10 @@ stages:
       - training
       - squiggliness
     outs:
-      - results/metrics/squiggliness_output/major_minor_scores.json
+      - reports/autoencoder_evaluation.json
+      - reports/reconstruction_errors.json
+      - reports/reconstruction_error_hist.png
+      - reports/confusion_matrix_autoencoder.png
 
   train_model:
     cmd: python script/train_model.py
@@ -46,10 +49,12 @@ stages:
     cmd: python script/evaluate_threshold.py
     deps:
       - script/evaluate_threshold.py
-      - results/metrics/squiggliness_output/major_minor_scores.json
+      - reports/autoencoder_evaluation.json
+      - reports/reconstruction_errors.json
     outs:
       - results/metrics/threshold_eval.json
-      - results/figures
+      - results/figures/reconstruction_hist.png
+      - results/figures/reconstruction_boxplot.png
 
   package_model:
     cmd: python script/package_model.py

@@ -3,21 +3,19 @@ stages:
   analyze_damage:
     cmd: python script/analyze_damage.py
     deps:
-    - path: data/raw/Faulty_solar_panel/Physical-Damage
+    - path: data/processed
       hash: md5
-      md5: d4a45829b225b19084b9572d1869d1a4.dir
-      size: 43211537
-      nfiles: 138
+      md5: c65929bd7ce31b42ff363329c3c92a6e.dir
+      size: 18350312
+      nfiles: 553
     - path: models/autoencoder_model.h5
       hash: md5
-      md5: 9fb005ffa1b9b112f43e7c542e55c586
-      size: 25871736
-      isexec: true
+      md5: 65b0996bd5c0c7b1c89b645512c5b910
+      size: 4075240
     - path: script/analyze_damage.py
       hash: md5
-      md5: b73cc807cbfb24e2596cc21a1057a6c0
-      size: 2457
-      isexec: true
+      md5: b7a8ba5b9ed2458a9946f6e5f61dd8a6
+      size: 3894
     params:
       params.yaml:
         data:
@@ -28,48 +26,70 @@ stages:
           processed_dir: data/processed
           train_split: 0.8
           val_split: 0.2
+          shuffle_data: true
+          data_augmentation: true
+          augmentation_strength: 0.5
         squiggliness:
           threshold: 1.5
           area_min: 100
           threshold_major: 0.65
           threshold_minor: 0.45
         training:
-          batch_size: 32
-          epochs: 10
+          batch_size: 16
+          epochs: 20
           img_height: 224
           img_width: 224
           learning_rate: 0.0005
-          model_output: models/solar_model.h5
+          model_output: models/autoencoder_model.h5
+          optimizer: adam
+          dropout_rate: 0.3
+          early_stopping_patience: 5
+          random_seed: 42
     outs:
-    - path: results/metrics/squiggliness_output/major_minor_scores.json
+    - path: reports/autoencoder_evaluation.json
       hash: md5
-      md5: 4798d871aeadf046a5c73ea0577d0497
-      size: 1928
-      isexec: true
+      md5: 44db055d0e21238964f7324066ca9ee2
+      size: 112
+    - path: reports/confusion_matrix_autoencoder.png
+      hash: md5
+      md5: e07c81a9470ca272f32783cfcc75bd87
+      size: 21105
+    - path: reports/reconstruction_error_hist.png
+      hash: md5
+      md5: 5f7d131a729175b046d2e0676f0fee80
+      size: 20640
+    - path: reports/reconstruction_errors.json
+      hash: md5
+      md5: 732a6c652580054728610ce1bdab8df6
+      size: 4656
   evaluate_threshold:
     cmd: python script/evaluate_threshold.py
     deps:
-    - path: results/metrics/squiggliness_output/major_minor_scores.json
+    - path: reports/autoencoder_evaluation.json
       hash: md5
-      md5: 4798d871aeadf046a5c73ea0577d0497
-      size: 1928
-      isexec: true
+      md5: 44db055d0e21238964f7324066ca9ee2
+      size: 112
+    - path: reports/reconstruction_errors.json
+      hash: md5
+      md5: 732a6c652580054728610ce1bdab8df6
+      size: 4656
     - path: script/evaluate_threshold.py
       hash: md5
-      md5: 166a92172aa1461995cbe57469b721e8
-      size: 1936
-      isexec: true
+      md5: cd86a5dddc9e633234081ef1cb912d7f
+      size: 2843
     outs:
-    - path: results/figures
+    - path: results/figures/reconstruction_boxplot.png
       hash: md5
-      md5: 1cde294571ae5133a79c5e4b2fc11443.dir
-      size: 39238
-      nfiles: 2
+      md5: 782a7eac3faad29b985f61dba5755a55
+      size: 17935
+    - path: results/figures/reconstruction_hist.png
+      hash: md5
+      md5: 2ca0d96176f8f9ac145b7c368e3dfaa0
+      size: 25143
     - path: results/metrics/threshold_eval.json
       hash: md5
-      md5: ed6c20ff07f76034fcadf0ba3680b3aa
-      size: 87
-      isexec: true
+      md5: 22e5829428d8200c115b6c24ff08048d
+      size: 124
   download_data:
     cmd: python script/download_data.py
     outs:
@@ -137,3 +157,19 @@ stages:
       hash: md5
       md5: 65b0996bd5c0c7b1c89b645512c5b910
       size: 4075240
+  package_model:
+    cmd: python script/package_model.py
+    deps:
+    - path: models/autoencoder_model.h5
+      hash: md5
+      md5: 65b0996bd5c0c7b1c89b645512c5b910
+      size: 4075240
+    - path: script/package_model.py
+      hash: md5
+      md5: 3ba4786306d6313ddece519ea0ca08e7
+      size: 1452
+    outs:
+    - path: deploy/model_package.tar.gz
+      hash: md5
+      md5: 20408a2dd6ea6724c0a7bb6ee159e45b
+      size: 3787044

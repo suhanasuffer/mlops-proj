@@ -1,63 +1,99 @@
 # script/train_model.py
-import os, yaml, numpy as np
-from tensorflow.keras import layers, models
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+import os
+import yaml
+import numpy as np
+import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 def load_params():
     with open("params.yaml") as f:
         return yaml.safe_load(f)
 
-def build_autoencoder(input_shape):
-    input_img = layers.Input(shape=input_shape)
-    # Encoder
-    x = layers.Conv2D(32, (3,3), activation='relu', padding='same')(input_img)
-    x = layers.MaxPooling2D((2,2), padding='same')(x)
-    x = layers.Conv2D(16, (3,3), activation='relu', padding='same')(x)
-    encoded = layers.MaxPooling2D((2,2), padding='same')(x)
-    # Decoder
-    x = layers.Conv2D(16, (3,3), activation='relu', padding='same')(encoded)
-    x = layers.UpSampling2D((2,2))(x)
-    x = layers.Conv2D(32, (3,3), activation='relu', padding='same')(x)
-    x = layers.UpSampling2D((2,2))(x)
-    decoded = layers.Conv2D(3, (3,3), activation='sigmoid', padding='same')(x)
-    autoencoder = models.Model(input_img, decoded)
-    autoencoder.compile(optimizer='adam', loss='mean_squared_error')
-    return autoencoder
+def autoencoder_data_generator(generator):
+    """Wraps an ImageDataGenerator to yield (x, x) for autoencoder training."""
+    for batch in generator:
+        yield (batch, batch)
 
 if __name__ == "__main__":
     params = load_params()
-    h = params["training"]["img_height"]
-    w = params["training"]["img_width"]
-    batch = params["training"]["batch_size"]
+    img_height = params["training"]["img_height"]
+    img_width = params["training"]["img_width"]
+    batch_size = params["training"]["batch_size"]
     epochs = params["training"]["epochs"]
-    lr = params["training"]["learning_rate"]
-    model_out = params["training"]["model_output"]
 
-    # Data generator: assumes processed_dir contains images (optionally in subfolders)
-    datagen = ImageDataGenerator(rescale=1./255)
-    processed_dir = params["data"].get("processed_dir", "data/processed")
-    train_gen = datagen.flow_from_directory with class_mode=None for autoencoder
+    processed_dir = "data/processed"
+    model_out = "models/autoencoder_model.h5"
+    os.makedirs("models", exist_ok=True)
+
+    print(" Loading processed images for autoencoder training...")
+
+    datagen = ImageDataGenerator(
+        rescale=1.0 / 255.0,
+        validation_split=0.2
+    )
+
     train_gen = datagen.flow_from_directory(
         processed_dir,
-        target_size=(h, w),
-        batch_size=batch,
-        class_mode=None,    # no labels
-        shuffle=True
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode=None,
+        subset="training"
     )
-    # steps per epoch
-    steps = max(1, train_gen.samples // batch)
 
-    input_shape = (h, w, 3)
-    autoencoder = build_autoencoder(input_shape)
+    val_gen = datagen.flow_from_directory(
+        processed_dir,
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        class_mode=None,
+        subset="validation"
+    )
 
-    os.makedirs(os.path.dirname(model_out), exist_ok=True)
-    # Callbacks: early stopping + model checkpoint
-    es = EarlyStopping(monitor='loss', patience=params["training"].get("early_stopping_patience", 5), restore_best_weights=True)
-    ckpt = ModelCheckpoint(model_out, save_best_only=True, monitor='loss')
+    print("Building autoencoder model...")
 
-    autoencoder.fit(train_gen, epochs=epochs, steps_per_epoch=steps, callbacks=[es, ckpt])
-    # final save if not already saved
-    if not  os.path.exists(model_out):
-        autoencoder.save(model_out)
-    print("Model saved to:", model_out)
+    input_img = Input(shape=(img_height, img_width, 3))
+
+    # Encoder
+    x = Conv2D(32, (3, 3), activation="relu", padding="same")(input_img)
+    x = MaxPooling2D((2, 2), padding="same")(x)
+    x = Conv2D(64, (3, 3), activation="relu", padding="same")(x)
+    x = MaxPooling2D((2, 2), padding="same")(x)
+    x = Conv2D(128, (3, 3), activation="relu", padding="same")(x)
+    encoded = MaxPooling2D((2, 2), padding="same")(x)
+
+    # Decoder
+    x = Conv2D(128, (3, 3), activation="relu", padding="same")(encoded)
+    x = UpSampling2D((2, 2))(x)
+    x = Conv2D(64, (3, 3), activation="relu", padding="same")(x)
+    x = UpSampling2D((2, 2))(x)
+    x = Conv2D(32, (3, 3), activation="relu", padding="same")(x)
+    x = UpSampling2D((2, 2))(x)
+    decoded = Conv2D(3, (3, 3), activation="sigmoid", padding="same")(x)
+
+    autoencoder = Model(input_img, decoded)
+    autoencoder.compile(optimizer="adam", loss="mse")
+
+    autoencoder.summary()
+
+    checkpoint = ModelCheckpoint(
+        model_out,
+        monitor="val_loss",
+        verbose=1,
+        save_best_only=True,
+        mode="min"
+    )
+    early_stop = EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
+
+    print(" Starting autoencoder training...")
+    autoencoder.fit(
+        autoencoder_data_generator(train_gen),
+        validation_data=autoencoder_data_generator(val_gen),
+        epochs=epochs,
+        steps_per_epoch=len(train_gen),
+        validation_steps=len(val_gen),
+        callbacks=[checkpoint, early_stop]
+    )
+
+    print(f" Autoencoder training complete. Model saved at {model_out}")
