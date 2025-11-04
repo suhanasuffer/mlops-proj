@@ -21,20 +21,6 @@ This project builds an automated image-based system that classifies solar panels
 
 ---
 
-## 🗂️ Project Structure
-.
-├── data/ # Dataset (versioned via DVC)
-├── models/ # Trained model artifacts
-├── src/ # Training and preprocessing scripts
-├── app.py # Streamlit web application
-├── dvc.yaml # DVC pipeline definition
-├── Dockerfile # Container setup
-├── requirements.txt # Dependencies
-├── .github/workflows/ # CI/CD pipeline
-└── README.md
-
----
-
 ## MLOps Workflow
 1. **Data Versioning:**  
    - DVC tracks datasets and model files.  
@@ -63,6 +49,7 @@ This project builds an automated image-based system that classifies solar panels
 ```bash
 docker build -t mlops-proj .
 docker run -p 8501:8501 mlops-proj
+```
 CI/CD Pipeline (GitHub Actions)
 Workflow: .github/workflows/ci-cd.yml
 
