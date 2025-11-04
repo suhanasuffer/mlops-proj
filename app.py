@@ -11,7 +11,7 @@ from PIL import Image
 autoencoder = load_model("models/autoencoder_model.h5", compile=False)
 
 
-adaptive_threshold = 0.085  # your chosen threshold
+adaptive_threshold = 0.085  
 
 # -------------------------------
 # Preprocessing for Autoencoder
