@@ -51,22 +51,17 @@ docker build -t mlops-proj .
 docker run -p 8501:8501 mlops-proj
 ```
 CI/CD Pipeline (GitHub Actions)
-Workflow: .github/workflows/ci-cd.yml
+Workflow: 
 
-Installs dependencies and runs dvc repro
-
-Executes unit tests with pytest
-
-Builds Docker image
-
-Deploys files to AWS EC2 using SCP
-
-SSHs into EC2 to rebuild and restart the containerized app
-
-Deployment on AWS EC2
-EC2 instance hosts the Dockerized Streamlit app
-
-Connected to AWS S3 for DVC remote storage
+- .github/workflows/ci-cd.yml
+- Installs dependencies and runs dvc repro
+- Executes unit tests with pytest
+- Builds Docker image
+- Deploys files to AWS EC2 using SCP
+- SSHs into EC2 to rebuild and restart the containerized app
+- Deployment on AWS EC2
+- EC2 instance hosts the Dockerized Streamlit app
+- Connected to AWS S3 for DVC remote storage
 
 Accessible publicly at:
 http://<ec2-public-ip>:8501
@@ -79,9 +74,7 @@ MLOps Tools: DVC, GitHub Actions, Docker, AWS EC2, S3
 Testing: Pytest
 
  Results
-The model successfully classifies solar panels as Clean, Dusty, or Damaged.
-
+The model successfully classifies solar panels as Clean or Dirty.
 Continuous retraining and deployment ensure up-to-date performance.
-
 Fully automated pipeline reduces manual intervention.
 
