@@ -11,12 +11,12 @@ data:
   augmentation_strength: 0.5
 
 training:
-  batch_size: 32
-  epochs: 10
+  batch_size: 16
+  epochs: 20
   img_height: 224
   img_width: 224
   learning_rate: 0.0005
-  model_output: models/solar_model.h5
+  model_output: "models/autoencoder_model.h5"
   optimizer: "adam"
   dropout_rate: 0.3
   early_stopping_patience: 5
