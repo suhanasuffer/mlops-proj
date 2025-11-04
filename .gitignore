@@ -65,3 +65,4 @@ models.solar_panel_cnn.h5
 reports/autoencoder_evaluation.json
 reports/reconstruction_errors.json
 reports/reconstruction_error_hist.png
+reports/confusion_matrix_autoencoder.png
