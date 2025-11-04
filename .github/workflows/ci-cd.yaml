@@ -91,3 +91,10 @@ jobs:
             docker build -t mlops-proj .
             docker run -d -p 8501:8501 --name mlops-proj mlops-proj
             echo "App deployed successfully on EC2!"
+
+
+      - name: cleanup docker
+        run: |
+          docker system prune -a -f
+          docker volume prune -f
+
