@@ -19,7 +19,7 @@ pyvenv.cfg
 # -------------------
 # Data and Results
 # -------------------
-
+data/
 data/interim/
 results/
 *.zip
@@ -59,3 +59,6 @@ Thumbs.db
 *.key
 .env
 credentials.json
+
+
+models.solar_panel_cnn.h5
